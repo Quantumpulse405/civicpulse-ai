@@ -55,6 +55,11 @@ class RecommendationEntry(BaseModel):
     expected_impact: str
     priority_score: float
     priority_band: str
+    citizen_demand_score: float = 0
+    infrastructure_gap_score: float = 0
+    population_impact_score: float = 0
+    urgency_score: float = 0
+    policy_alignment_score: float = 0
 
     model_config = {"from_attributes": True}
 
