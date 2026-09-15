@@ -249,6 +249,39 @@ export default function CitizenPortal() {
               <AnalysisField label="Keywords" value={result.keywords.replaceAll(",", ", ")} />
               <AnalysisField label="AI Mode" value={result.ai_mode_used} />
             </dl>
+		            {result.similar_count > 0 && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900">
+                <strong>{result.similar_count} other citizen(s)</strong> in {result.district_name} have reported similar {result.sector.toLowerCase()} issues. Your voice strengthens this priority.
+              </div>
+            )}
+
+            {result.similar_count > 0 && (
+              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900">
+                <strong>{result.similar_count} other citizen(s)</strong> in {result.district_name} have reported similar {result.sector.toLowerCase()} issues. Your voice strengthens this priority.
+              </div>
+            )}
+
+            <div className="mt-4 pt-4 border-t border-slate-100 text-sm text-slate-700">
+              Your feedback has been recorded and will contribute to the development
+              priority score for <strong className="text-slate-900">{result.district_name}</strong>.
+            </div>
+
+            <div className="mt-3">
+              
+                href="/dashboard"
+                className="text-sm text-blue-700 hover:underline font-semibold"
+              >
+                View how this impacts development priorities on the dashboard →
+              </a>
+            </div>
+            <div className="mt-3">
+              
+                href="/dashboard"
+                className="text-sm text-blue-700 hover:underline font-semibold"
+              >
+                View how this impacts development priorities on the dashboard →
+              </a>
+            </div>
           </div>
         )}
       </div>

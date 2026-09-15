@@ -22,6 +22,47 @@ def submit_feedback(payload: FeedbackCreate, db: Session = Depends(get_db)):
         hinted_sector=payload.sector,
     )
 
+    region = (
+        db.query(Region)
+        .filter(Region.name.ilike(payload.district_name))
+        .first()
+    )
+
+    request_row = CitizenRequest(
+        raw_text=payload.text,
+        input_language=analysis["detected_language"],
+        submitted_via=payload.submitted_via,
+        region_id=region.id if region else None,
+        district_name=payload.district_name,
+        state_name=payload.state_name,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        sector=analysis["sector"],
+        problem_category=analysis["problem_category"],
+        urgency_score=analysis["urgency_score"],
+        sentiment=analysis["sentiment"],
+        keywords=analysis["keywords"],
+        ai_mode_used=analysis["ai_mode_used"],
+    )
+
+    db.add(request_row)
+    db.commit()
+    db.refresh(request_row)
+
+    # Count similar requests (same sector, same region) to show citizen they're not alone
+    similar_count = (
+        db.query(CitizenRequest)
+        .filter(
+            CitizenRequest.sector == analysis["sector"],
+            CitizenRequest.district_name.ilike(payload.district_name),
+            CitizenRequest.id != request_row.id,
+        )
+        .count()
+    )
+    # Attach as a non-model attribute for the response
+    request_row.__dict__["similar_count"] = similar_count
+
+    return request_row
     # Try to match the district to an existing seeded Region (best-effort).
     region = (
         db.query(Region)

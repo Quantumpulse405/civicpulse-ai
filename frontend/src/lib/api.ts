@@ -25,6 +25,7 @@ export interface FeedbackResponse {
   keywords: string;
   ai_mode_used: string;
   created_at: string;
+  similar_count: number;
 }
 
 export interface ApiError {
