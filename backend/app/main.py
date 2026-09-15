@@ -1,13 +1,16 @@
 """
 CivicPulse AI backend entry point.
 """
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from app.database import Base, engine
 from app.routes import feedback, dashboard
 
-# Ensure all tables exist (safe no-op if seed.py already created them)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -16,9 +19,15 @@ app = FastAPI(
     version="0.1.0",
 )
 
+raw_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000",
+)
+allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,10 +41,9 @@ app.include_router(dashboard.router)
 def health_check():
     return {"status": "ok"}
 
+
 @app.get("/api/ai-status")
 def ai_status():
-    """Reports which AI mode is currently active, for the frontend badge."""
-    import os
     mode = os.getenv("AI_MODE", "demo")
     return {
         "ai_mode": mode,
