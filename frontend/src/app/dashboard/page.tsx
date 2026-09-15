@@ -24,11 +24,13 @@ import {
   getDashboardRegions,
   getDashboardSectors,
   getDashboardTrend,
+  getRecommendations,
   DashboardSummary,
   PriorityTableEntry,
   RegionMapEntry,
   SectorDistributionEntry,
   TrendEntry,
+  RecommendationEntry,
 } from "@/lib/api";
 import PriorityBadge from "@/components/PriorityBadge";
 
@@ -55,6 +57,7 @@ export default function Dashboard() {
   const [sectors, setSectors] = useState<SectorDistributionEntry[]>([]);
   const [trend, setTrend] = useState<TrendEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState<RecommendationEntry[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -63,12 +66,14 @@ export default function Dashboard() {
       getDashboardRegions(),
       getDashboardSectors(),
       getDashboardTrend(30),
-    ]).then(([summaryData, priorityData, regionData, sectorData, trendData]) => {
+      getRecommendations(5),
+    ]).then(([summaryData, priorityData, regionData, sectorData, trendData, recData]) => {
       setSummary(summaryData);
       setPriorities(priorityData);
       setRegions(regionData);
       setSectors(sectorData);
       setTrend(trendData);
+      setRecommendations(recData);
       setLoading(false);
     });
   }, []);
@@ -212,7 +217,51 @@ export default function Dashboard() {
             </ResponsiveContainer>
           )}
         </section>
-
+        {/* Top Recommendations */}
+        <section className="mb-8">
+          <h2 className="text-lg font-bold text-slate-950 mb-4">
+            Top Recommended Projects
+          </h2>
+          {loading ? (
+            <div className="text-slate-500 text-sm">Loading recommendations…</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recommendations.map((rec) => (
+                <div key={rec.id} className="bg-white rounded-xl border border-slate-200 p-5">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-bold text-slate-950 text-sm leading-snug">
+                      {rec.project_name}
+                    </h3>
+                    <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                      rec.priority_band === "Critical" ? "bg-red-100 text-red-800" :
+                      rec.priority_band === "High" ? "bg-orange-100 text-orange-800" :
+                      rec.priority_band === "Medium" ? "bg-yellow-100 text-yellow-800" :
+                      "bg-slate-100 text-slate-700"
+                    }`}>
+                      {rec.priority_score}
+                    </span>
+                  </div>
+                  <p className="text-xs font-semibold text-blue-700 mb-2">
+                    {rec.region_name} · {rec.sector}
+                  </p>
+                  <p className="text-xs text-slate-700 leading-relaxed line-clamp-3">
+                    {rec.reasoning}
+                  </p>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between text-xs">
+                    <span className="text-slate-600">
+                      <span className="font-bold text-slate-900">
+                        {rec.estimated_beneficiaries.toLocaleString()}
+                      </span> beneficiaries
+                    </span>
+                    <a href={`/region/${rec.region_id}`} className="text-blue-700 font-semibold hover:underline">
+                      Details →
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
         {/* Priority table */}
         <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200">
