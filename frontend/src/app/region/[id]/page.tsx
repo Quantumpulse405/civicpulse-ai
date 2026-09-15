@@ -102,7 +102,19 @@ export default function RegionDetailPage() {
                     </div>
                   </div>
 
-                  <p className="text-sm text-slate-700 mt-3">{rec.reasoning}</p>
+                  <p className="text-sm text-slate-800 mt-3 leading-relaxed">{rec.reasoning}</p>
+
+                  {/* Priority score breakdown */}
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                      Priority Score Breakdown
+                    </p>
+                    <ScoreBar label="Citizen Demand" score={rec.citizen_demand_score} weight="30%" />
+                    <ScoreBar label="Infrastructure Gap" score={rec.infrastructure_gap_score} weight="25%" />
+                    <ScoreBar label="Population Impact" score={rec.population_impact_score} weight="20%" />
+                    <ScoreBar label="Urgency" score={rec.urgency_score} weight="15%" />
+                    <ScoreBar label="Policy Alignment" score={rec.policy_alignment_score} weight="10%" />
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
                     <div>
@@ -131,6 +143,27 @@ function StatCard({ label, value }: { label: string; value: string }) {
     <div className="bg-white rounded-xl border border-slate-200 p-5">
       <p className="text-sm text-slate-500">{label}</p>
       <p className="text-xl font-bold text-slate-900 mt-1">{value}</p>
+    </div>
+  );
+}
+
+function ScoreBar({ label, score, weight }: { label: string; score: number; weight: string }) {
+  const pct = Math.round(score);
+  const color =
+    pct >= 75 ? "bg-red-500" :
+    pct >= 50 ? "bg-orange-400" :
+    pct >= 25 ? "bg-yellow-400" : "bg-slate-300";
+
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="w-36 text-slate-700 font-medium shrink-0">{label} ({weight})</span>
+      <div className="flex-1 bg-slate-100 rounded-full h-2">
+        <div
+          className={`h-2 rounded-full ${color}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="w-8 text-right font-bold text-slate-900">{pct}</span>
     </div>
   );
 }

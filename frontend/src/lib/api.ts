@@ -129,6 +129,11 @@ export interface RecommendationEntry {
   expected_impact: string;
   priority_score: number;
   priority_band: string;
+  citizen_demand_score: number;
+  infrastructure_gap_score: number;
+  population_impact_score: number;
+  urgency_score: number;
+  policy_alignment_score: number;
 }
 
 async function safeGet<T>(path: string, fallback: T): Promise<T> {
