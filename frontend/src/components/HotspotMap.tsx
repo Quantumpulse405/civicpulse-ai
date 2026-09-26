@@ -45,31 +45,48 @@ export default function HotspotMap({ regions }: { regions: RegionMapEntry[] }) {
               weight: 2,
             }}
           >
-            <Popup>
-              <div className="text-sm space-y-1">
-                <p className="font-semibold text-slate-900">{region.name}</p>
-                <p className="text-slate-600">
-                  {region.request_count} citizen request(s)
-                </p>
-                {region.dominant_sector && (
-                  <p className="text-slate-600">
-                    Dominant issue: {region.dominant_sector}
+            <Popup className="custom-popup">
+              <div className="text-sm p-1 space-y-1.5 min-w-[190px]">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                  <span className="font-bold text-slate-950 text-base">{region.name}</span>
+                  <span
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: `${color}20`,
+                      color: color,
+                      border: `1px solid ${color}40`,
+                    }}
+                  >
+                    {band}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-700 space-y-0.5 pt-0.5">
+                  <p>
+                    <strong className="text-slate-900">Requests:</strong> {region.request_count} citizen voice(s)
                   </p>
-                )}
-                <p className="text-slate-600">
-                  Population: {region.population.toLocaleString()}
-                </p>
-                {region.top_priority_score !== null && (
-                  <p className="text-slate-600">
-                    Top priority score: {region.top_priority_score} ({band})
+                  {region.dominant_sector && (
+                    <p>
+                      <strong className="text-slate-900">Top Issue:</strong> {region.dominant_sector}
+                    </p>
+                  )}
+                  <p>
+                    <strong className="text-slate-900">Population:</strong> {region.population.toLocaleString()}
                   </p>
-                )}
-                <Link
-                  href={`/region/${region.id}`}
-                  className="text-blue-600 hover:underline text-xs inline-block mt-1"
-                >
-                  View region details →
-                </Link>
+                  {region.top_priority_score !== null && (
+                    <p>
+                      <strong className="text-slate-900">Priority Score:</strong>{" "}
+                      <span className="font-bold text-slate-950">{region.top_priority_score}</span> / 100
+                    </p>
+                  )}
+                </div>
+                <div className="pt-2 border-t border-slate-100">
+                  <Link
+                    href={`/region/${region.id}`}
+                    className="inline-block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-1.5 px-3 rounded-md transition shadow-2xs"
+                  >
+                    View District Breakdown →
+                  </Link>
+                </div>
               </div>
             </Popup>
           </CircleMarker>

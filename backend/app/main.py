@@ -19,15 +19,26 @@ app = FastAPI(
     version="0.1.0",
 )
 
-raw_origins = os.getenv(
-    "CORS_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000",
-)
-allowed_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+# Default origins + any dynamically configured in CORS_ORIGINS env var
+default_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://civicpulse-ai.vercel.app",
+    "https://civicpulse-ai-blue.vercel.app",
+    "https://civicpulse-ai-git-main-audace-shift.vercel.app",
+    "https://civicpulse-givbt40lh-audace-shift.vercel.app",
+]
+env_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
+allow_origins = list(dict.fromkeys(default_origins + env_origins))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=allow_origins,
+    allow_origin_regex=r"^https:\/\/[a-zA-Z0-9_-]+\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,6 +47,14 @@ app.add_middleware(
 app.include_router(feedback.router)
 app.include_router(dashboard.router)
 
+
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "service": "CivicPulse AI API",
+        "docs": "/docs",
+    }
 
 @app.get("/health")
 def health_check():

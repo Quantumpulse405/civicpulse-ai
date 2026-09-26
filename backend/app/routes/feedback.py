@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import CitizenRequest, Region
 from app.schemas.feedback import FeedbackCreate, FeedbackResponse
 from app.services.analyzer import analyze_feedback
+from app.services.recommendation_engine import generate_recommendations
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 
@@ -22,7 +23,6 @@ def submit_feedback(payload: FeedbackCreate, db: Session = Depends(get_db)):
         hinted_sector=payload.sector,
     )
 
-    # Try to match the district to an existing seeded Region (best-effort).
     region = (
         db.query(Region)
         .filter(Region.name.ilike(payload.district_name))
@@ -49,6 +49,22 @@ def submit_feedback(payload: FeedbackCreate, db: Session = Depends(get_db)):
     db.add(request_row)
     db.commit()
     db.refresh(request_row)
+
+    # Count similar requests (same sector, same region) to show citizen they're not alone
+    similar_count = (
+        db.query(CitizenRequest)
+        .filter(
+            CitizenRequest.sector == analysis["sector"],
+            CitizenRequest.district_name.ilike(payload.district_name),
+            CitizenRequest.id != request_row.id,
+        )
+        .count()
+    )
+    # Regenerate recommendations and priorities with the new citizen voice included
+    try:
+        generate_recommendations(db, persist=True)
+    except Exception as exc:
+        print(f"[CivicPulse] Non-fatal error updating recommendations: {exc}")
 
     return request_row
 

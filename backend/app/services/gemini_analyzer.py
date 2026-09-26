@@ -47,8 +47,11 @@ Respond with ONLY the JSON object."""
 
 
 def _extract_json(raw_text: str) -> dict:
-    """Gemini sometimes wraps JSON in ```json fences despite instructions; strip them."""
+    """Extract JSON object even if Gemini wraps it in markdown fences or commentary."""
     cleaned = raw_text.strip()
+    match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+    if match:
+        return json.loads(match.group(0))
     cleaned = re.sub(r"^```(json)?", "", cleaned).strip()
     cleaned = re.sub(r"```$", "", cleaned).strip()
     return json.loads(cleaned)
@@ -62,10 +65,18 @@ def analyze_feedback_gemini(text: str, hinted_sector: str | None = None) -> dict
     client = _get_client()
     prompt = ANALYSIS_PROMPT_TEMPLATE.format(text=text)
 
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt,
-    )
+    model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    try:
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+        )
+    except Exception:
+        # Fallback to 3.6-flash if 3.8-flash has an unexpected issue
+        response = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=prompt,
+        )
 
     parsed = _extract_json(response.text)
 

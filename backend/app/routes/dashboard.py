@@ -196,6 +196,11 @@ def region_detail(region_id: int, db: Session = Depends(get_db)):
             expected_impact=r.expected_impact,
             priority_score=r.priority_score,
             priority_band=r.priority_band,
+            citizen_demand_score=r.citizen_demand_score,
+            infrastructure_gap_score=r.infrastructure_gap_score,
+            population_impact_score=r.population_impact_score,
+            urgency_score=r.urgency_score,
+            policy_alignment_score=r.policy_alignment_score,
         )
         for r in recs
     ]

@@ -57,4 +57,6 @@ class FeedbackResponse(BaseModel):
     ai_mode_used: str
     created_at: datetime
 
+    similar_count: int = 0
+
     model_config = {"from_attributes": True}
