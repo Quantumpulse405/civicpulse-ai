@@ -1,4 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const RAW_API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+export const API_BASE = RAW_API_BASE.replace(/\/+$/, "");
 
 export interface FeedbackPayload {
   text: string;
@@ -32,19 +33,49 @@ export interface ApiError {
   detail: string;
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Sends a lightweight health check ping to wake up the backend if sleeping on Render.
+ */
+export async function wakeUpBackend(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/health`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function submitFeedback(
   payload: FeedbackPayload
 ): Promise<FeedbackResponse> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_BASE}/api/feedback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
+  let res: Response | null = null;
+  let lastError: any = null;
+
+  // Retry up to 2 times to handle Render cold start wake-up delays
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      res = await fetch(`${API_BASE}/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      break;
+    } catch (err) {
+      lastError = err;
+      if (attempt < 2) {
+        await sleep(1500);
+      }
+    }
+  }
+
+  if (!res) {
     throw new Error(
-      "Unable to reach the server. Please check your connection and try again."
+      "Unable to reach the server. Cloud services may be waking up (Render free tier). Please try again in a few seconds."
     );
   }
 
@@ -68,14 +99,14 @@ export async function submitFeedback(
 
 export async function getAiStatus(): Promise<{ ai_mode: string; label: string }> {
   try {
-    const res = await fetch(`${API_BASE}/api/ai-status`);
+    const res = await fetch(`${API_BASE}/api/ai-status`, { cache: "no-store" });
     if (!res.ok) {
       return { ai_mode: "demo", label: "Demo AI Mode" };
     }
     return res.json();
   } catch {
-    // Backend unreachable (not running, network issue, CORS block, etc.)
-    return { ai_mode: "unknown", label: "AI status unavailable" };
+    // Backend unreachable (sleeping, network issue, etc.)
+    return { ai_mode: "unknown", label: "AI status connecting..." };
   }
 }
 
@@ -136,14 +167,21 @@ export interface RecommendationEntry {
   policy_alignment_score: number;
 }
 
-async function safeGet<T>(path: string, fallback: T): Promise<T> {
-  try {
-    const res = await fetch(`${API_BASE}${path}`);
-    if (!res.ok) return fallback;
-    return res.json();
-  } catch {
-    return fallback;
+async function safeGet<T>(path: string, fallback: T, retries = 2): Promise<T> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // If error occurs, wait before retry if not last attempt
+      if (attempt < retries) {
+        await sleep(1500);
+      }
+    }
   }
+  return fallback;
 }
 
 export function getDashboardSummary(): Promise<DashboardSummary> {
@@ -193,12 +231,18 @@ export interface RegionDetail {
   recommendations: RecommendationEntry[];
 }
 
-export async function getRegionDetail(id: string | number): Promise<RegionDetail | null> {
-  try {
-    const res = await fetch(`${API_BASE}/api/regions/${id}`);
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
+export async function getRegionDetail(id: string | number, retries = 2): Promise<RegionDetail | null> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE}/api/regions/${id}`, { cache: "no-store" });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      if (attempt < retries) {
+        await sleep(1500);
+      }
+    }
   }
+  return null;
 }

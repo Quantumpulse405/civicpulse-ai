@@ -16,7 +16,9 @@ from app.models import (
     InfrastructureMetric,
     CitizenRequest,
     DevelopmentProject,
+    Recommendation,
 )
+from app.services.recommendation_engine import generate_recommendations
 
 random.seed(42)  # reproducible synthetic data
 
@@ -105,8 +107,12 @@ def seed():
     try:
         existing = db.query(Region).count()
         if existing > 0:
-            print(f"Database already has {existing} regions. Skipping seed.")
-            print("Delete civicpulse.db and rerun this script if you want a fresh seed.")
+            print(f"Database already has {existing} regions. Skipping full re-seed.")
+            rec_count = db.query(Recommendation).count()
+            if rec_count == 0:
+                print("Generating missing recommendations...")
+                generate_recommendations(db, persist=True)
+                print("Recommendations generated.")
             return
 
         print("Seeding regions...")
@@ -214,7 +220,9 @@ def seed():
             count += 1
 
         db.commit()
-        print(f"Seeded {len(region_objs)} regions and {count} citizen requests.")
+        print("Generating initial recommendations and priority rankings...")
+        recs = generate_recommendations(db, persist=True)
+        print(f"Seeded {len(region_objs)} regions, {count} citizen requests, and generated {len(recs)} priority recommendations.")
         print("Done. This is SYNTHETIC/DEMO data -- not official government data.")
 
     finally:
